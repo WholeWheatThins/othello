@@ -541,21 +541,103 @@ def decentHeuristic(array,player):
 				score-=add
 	return score
 
-#Seperating the use of heuristics for early/mid/late game.
-def finalHeuristic(array,player):
-	if moves<=8:
-		numMoves = 0
-		for x in range(8):
+#Heuristic that weights heavier if you have more potential moves than the opponent
+def potentialMovesHeuristic(array, player):
+	opponentPlayer = None
+	finalJudgement = None
+	if player == 0:
+		opponentPlayer = 1
+	else:
+		opponentPlayer = 0
+	score = 0
+	opponentScore = 0
+	for x in range(8):
 			for y in range(8):
 				if valid(array,player,x,y):
-					numMoves += 1
-		return numMoves+decentHeuristic(array,player)
-	elif moves<=52:
-		return decentHeuristic(array,player)
-	elif moves<=58:
-		return slightlyLessDumbScore(array,player)
+					score += 1
+				if valid(array, opponentPlayer, x, y):
+					opponentScore += 1
+	if (score + opponentScore) != 0:
+		finalJudgement = (100 * (score - opponentScore)) / (score + opponentScore)
 	else:
-		return dumbScore(array,player)
+		finalJudgement = 0
+	return finalJudgement
+	
+#Heuristic using static weights as outlined in "An Analysis of Heuristics in Othello"
+def staticWeightsHeuristic(array, player):
+	score = 0
+	cornerVal = 4
+	horizontalAdjacentVal = -3
+	diagonalAdjacentVal = -4
+	sideVal = 2
+	edgeAdjacentVal = -1
+	innerCornerVal = 1
+	centerVal = 1
+	#Set player and opponent colours
+	if player==1:
+		colour="b"
+		#opponent="w"
+	else:
+		colour = "w"
+		#opponent = "b"
+	#Go through all the tiles	
+	for x in range(8):
+		for y in range(8):
+			if array[x][y]==colour: #Does this tile have player 1's piece?
+				#Horizontally adjacent to corners are worth -3
+				if (x==0 and y==1) or (x==1 and y==0):
+					add = horizontalAdjacentVal
+
+				elif (x==0 and y==6) or (x==1 and y==7):
+					add = horizontalAdjacentVal
+
+				elif (x==7 and y==1) or (x==6 and y==0):
+					add = horizontalAdjacentVal
+
+				elif (x==7 and y==6) or (x==6 and y==7):
+					add = horizontalAdjacentVal
+
+				#Diagonally adjacent to corners are worth -4
+				elif (x==1 and y==1) or (x==1 and y==6) or (x==6 and y==1) or (x==6 and y==6):
+					add = diagonalAdjacentVal
+
+				#Edge tiles worth 2
+				elif (x==0 and 1<y<6) or (x==7 and 1<y<6) or (y==0 and 1<x<6) or (y==7 and 1<x<6):
+					add=sideVal
+
+				#Corner tiles worth 4
+				elif (x==0 and y==0) or (x==0 and y==7) or (x==7 and y==0) or (x==7 and y==7):
+					add = cornerVal
+
+				#Adjacent to edges but not to corners are worth -1
+				elif (x==1 and 2<y<5) or (x==6 and 2<y<5) or (y==1 and 2<x<5) or (y==7 and 2<x<5):
+					add = edgeAdjacentVal
+
+				#Corners of the inner 4x4 are worth 1
+				elif (x==2 and y==2) or (x==2 and y==5) or (x==5 and y==2) or (x==5 and y==5):
+					add = innerCornerVal
+
+				#The center 4 squares are worth 1
+				elif (x==3 and y==3) or (x==3 and y==4) or (x==4 and y==3) or (x==4 and y==4):
+					add = centerVal
+
+				#Any other tile is worth 0
+				else:
+					add = 0
+
+				score += add
+	return score
+
+#Determining which heuristic was selected at beginning of game
+def finalHeuristic(array,player):
+	if heuristic == "count":
+		return dumbScore(array, player)
+	elif heuristic == "mobility":
+		return potentialMovesHeuristic(array,player)
+	elif heuristic == "weights":
+		return staticWeightsHeuristic(array,player)
+	else:
+		raise Exception("Heuristic not determined properly.")
 
 #Checks if a move is valid for a given array.
 def valid(array,player,x,y):
@@ -616,6 +698,8 @@ def valid(array,player,x,y):
 #When the user clicks, if it's a valid move, make the move
 def clickHandle(event):
 	global depth
+	global heuristic
+	depth = 5
 	xMouse = event.x
 	yMouse = event.y
 	if running:
@@ -640,15 +724,15 @@ def clickHandle(event):
 		if 300<=yMouse<=350:
 			#One star
 			if 25<=xMouse<=155:
-				depth = 1
+				heuristic = "count"
 				playGame()
 			#Two star
 			elif 180<=xMouse<=310:
-				depth = 4
+				heuristic = "mobility"
 				playGame()
 			#Three star
 			elif 335<=xMouse<=465:
-				depth = 6
+				heuristic = "weights"
 				playGame()
 
 def keyHandle(event):
