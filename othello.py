@@ -125,7 +125,7 @@ class Board:
 			screen.update()
 			#If the computer is AI, make a move
 			if self.player==1:
-				startTime = time()
+				#startTime = time()
 				self.oldarray = self.array
 				alphaBetaResult = self.alphaBeta(self.array,depth,-float("inf"),float("inf"),1)
 				self.array = alphaBetaResult[1]
@@ -135,12 +135,31 @@ class Board:
 					self.oldarray[position[0]][position[1]]="b"
 
 				self.player = 1-self.player
-				deltaTime = round((time()-startTime)*100)/100
-				if deltaTime<2:
-					sleep(2-deltaTime)
+				#deltaTime = round((time()-startTime)*100)/100
+				#if deltaTime<2:
+					#sleep(2-deltaTime)
 				nodes = 0
 				#Player must pass?
 				self.passTest()
+				self.update()
+			elif self.player==0: #(ADDED)
+				#startTime = time()
+				self.oldarray = self.array
+				alphaBetaResult = self.alphaBeta(self.array,depth,-float("inf"),float("inf"),0)
+				self.array = alphaBetaResult[1]
+
+				if len(alphaBetaResult)==3:
+					position = alphaBetaResult[2]
+					self.oldarray[position[0]][position[1]]="w"
+
+				self.player = 1+self.player
+				#deltaTime = round((time()-startTime)*100)/100
+				#if deltaTime<2:
+					#sleep(2-deltaTime)
+				nodes = 0
+				#Player must pass?
+				self.passTest()
+				self.update()
 		else:
 			screen.create_text(250,550,anchor="c",font=("Consolas",15), text="The game is done!")
 
@@ -434,7 +453,12 @@ def drawGridBackground(outline=False):
 
 	screen.update()
 
-#Simple heuristic. Compares number of each tile.
+#Worst heuristic. Completely random.
+def randomScore(array, player):
+	score = randrange(20)
+	return score
+
+#Simple heuristic. Compares number of each tile. (USED)
 def dumbScore(array,player):
 	score = 0
 	#Set player and opponent colours
@@ -453,7 +477,7 @@ def dumbScore(array,player):
 				score-=1
 	return score
 
-#Less simple but still simple heuristic. Weights corners and edges as more
+#Less simple but still simple heuristic. Weights corners and edges as more (UNUSED)
 def slightlyLessDumbScore(array,player):
 	score = 0
 	#Set player and opponent colours
@@ -482,7 +506,7 @@ def slightlyLessDumbScore(array,player):
 	return score
 
 #Heuristic that weights corner tiles and edge tiles as positive, adjacent to corners (if the corner is not yours) as negative
-#Weights other tiles as one point
+#Weights other tiles as one point (UNUSED)
 def decentHeuristic(array,player):
 	score = 0
 	cornerVal = 25
@@ -541,7 +565,7 @@ def decentHeuristic(array,player):
 				score-=add
 	return score
 
-#Heuristic that weights heavier if you have more potential moves than the opponent
+#Heuristic that weights heavier if you have more potential moves than the opponent (ADDITON)
 def potentialMovesHeuristic(array, player):
 	opponentPlayer = None
 	finalJudgement = None
@@ -563,7 +587,7 @@ def potentialMovesHeuristic(array, player):
 		finalJudgement = 0
 	return finalJudgement
 	
-#Heuristic using static weights as outlined in "An Analysis of Heuristics in Othello"
+#Heuristic using static weights as outlined in "An Analysis of Heuristics in Othello" (ADDITION)
 def staticWeightsHeuristic(array, player):
 	score = 0
 	cornerVal = 4
@@ -628,8 +652,10 @@ def staticWeightsHeuristic(array, player):
 				score += add
 	return score
 
-#Determining which heuristic was selected at beginning of game
+#Determining which heuristic was selected at beginning of game (MODIFIED)
 def finalHeuristic(array,player):
+	if player==1:
+		return staticWeightsHeuristic(array, player)
 	if heuristic == "count":
 		return dumbScore(array, player)
 	elif heuristic == "mobility":
